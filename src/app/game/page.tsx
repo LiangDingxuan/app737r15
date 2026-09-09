@@ -36,11 +36,11 @@ export default function Game() {
     
 
     const stateRef = useRef({
-        holdPiece, curPiece, boardState, curPiecePos, playingState
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue
     })
 
     stateRef.current = {
-        holdPiece, curPiece, boardState, curPiecePos, playingState
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue
     }
 
     const handleSetGameState = (isPlaying: boolean) =>{
@@ -52,15 +52,17 @@ export default function Game() {
         newGame();
     }
 
-    //const { holdPiece, curPiece, boardState, curPiecePos, playingState} = stateRef.current;
+    //const { holdPiece, curPiece, boardState, curPiecePos, playingState, queue} = stateRef.current;
 
     const newGame = () =>{
+        setQueue(null)
         shufflePieces();
         newBoard();
         popQueue();
     }
 
     const shufflePieces = () =>{
+        const {queue} = stateRef.current;
         const shuffledPieces = [...piecesList];
 
         if(queue === null || queue.length === 0){
@@ -82,12 +84,13 @@ export default function Game() {
     }
 
     const popQueue = () =>{
+        const {queue} = stateRef.current;
         if (queue === null){
             shufflePieces();
             return;
         }
-        setCurPiece(queue[0]);
         setCurPiecePos(defaultSpawn)
+        setCurPiece(queue[0]);
         setQueue(queue.slice(1))
         shufflePieces();
     }
@@ -144,9 +147,9 @@ export default function Game() {
         const gameBoard = boardState.map(row => [...row])
         if(curPiece && curPiecePos){
             let ghostY = curPiecePos.y + 1
-            // while(canPlace(curPiece, curPiecePos.x, ghostY)){
-            //     ghostY += 1
-            // }
+            while(canPlace(curPiece, curPiecePos.x, ghostY)){
+                ghostY += 1
+            }
             curPiece.shape.forEach((row,dy) =>{
                 row.forEach((cell, dx) =>{
                     if(cell === 1){
@@ -160,26 +163,76 @@ export default function Game() {
                         ) {
                             gameBoard[boardY][boardX] = curPiece.name as keyof typeof colours
                         }
-                        
                     }
 
-                    // if(cell === 1){
-                    //     const boardY = dy + ghostY
-                    //     const boardX = dx + curPiecePos.x
-                    //     gameBoard[boardY][boardX] = "G"+String(curPiece.name) as keyof typeof colours
-                    // }
+                    if(cell === 1){
+                        const boardY = dy + ghostY - 1
+                        const boardX = dx + curPiecePos.x
+                        gameBoard[boardY][boardX] = "G"+String(curPiece.name) as keyof typeof colours
+                    }
                 })
             })
         }
         return gameBoard;
     }
 
+    const handleSoftDrop = () =>{
+
+    }
+
+    const handleDas = (direction: number) =>{
+
+    }
+
+    const handleRotateClockwise = () =>{
+
+    }
+
+    const handleRotateCounterClockwise = () =>{
+
+    }
+
+    const handleHardDrop = () =>{
+
+    }
+
+    const handleHoldPiece = () =>{
+
+    }
+
+    const stopSoftDrop = () =>{
+
+    }
+
+    const stopDas = () =>{
+
+    }
+
     //setBoardState(getBoard())
     const gameBoard = getBoard()
     
-
     useEffect(()=>{
-        newGame();
+        if (!playingState) return;
+        const handleKeyDown = (e: KeyboardEvent) =>{
+            if (e.key === 'ArrowLeft') handleDas(-1);
+            if (e.key === 'ArrowRight') handleDas(1);
+            if (e.key === 'ArrowUp') handleRotateClockwise();
+            if (e.key === 'ArrowDown') handleSoftDrop();
+            if (e.key === 'z') handleRotateCounterClockwise();
+            if (e.key === ' ') handleHardDrop();
+            if (e.key === 'Shift') handleHoldPiece();
+        }
+        const handleKeyUp = (e: KeyboardEvent) =>{
+            if (e.key === 'ArrowDown') stopSoftDrop();
+            if (e.key === 'ArrowLeft') stopDas();
+            if (e.key === 'ArrowRight') stopDas();
+        }
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        }
     },[])
 
     //gravity
