@@ -33,14 +33,15 @@ export default function Game() {
     const [boardState, setBoardState] = useState<BoardCell[][]>(createBoard());
     const [curPiecePos, setCurPiecePos] = useState(()=>(defaultSpawn))
     const [playingState, setPlayingState] = useState(false)
+    const [isGrounded, setIsGrounded] = useState(false)
     
 
     const stateRef = useRef({
-        holdPiece, curPiece, boardState, curPiecePos, playingState, queue
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded
     })
 
     stateRef.current = {
-        holdPiece, curPiece, boardState, curPiecePos, playingState, queue
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded
     }
 
     const handleSetGameState = (isPlaying: boolean) =>{
@@ -52,13 +53,13 @@ export default function Game() {
         newGame();
     }
 
-    //const { holdPiece, curPiece, boardState, curPiecePos, playingState, queue} = stateRef.current;
+    //const { holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded} = stateRef.current;
 
     const newGame = () =>{
         setQueue(null)
-        shufflePieces();
+        setIsGrounded(false);
         newBoard();
-        popQueue();
+        shufflePieces();
     }
 
     const shufflePieces = () =>{
@@ -120,8 +121,9 @@ export default function Game() {
     }
 
     const handleLockPiece=()=>{
-        const {curPiece, boardState, curPiecePos} = stateRef.current;
+        const {curPiece, boardState, curPiecePos, isGrounded} = stateRef.current;
         const resultLockedBoard = boardState.map(row => [...row])
+        if(!isGrounded) return;
         if (!curPiece) return;
         curPiece.shape.forEach((row,dy)=>{
             row.forEach((cell,dx)=>{
@@ -140,7 +142,9 @@ export default function Game() {
                 }
             })
         })
-        setBoardState(resultLockedBoard)
+        setBoardState(resultLockedBoard);
+        setIsGrounded(false);
+        popQueue();
     }
 
     const getBoard = () =>{
@@ -168,7 +172,9 @@ export default function Game() {
                     if(cell === 1){
                         const boardY = dy + ghostY - 1
                         const boardX = dx + curPiecePos.x
-                        gameBoard[boardY][boardX] = "G"+String(curPiece.name) as keyof typeof colours
+                        if(gameBoard[boardY][boardX]===0){                        
+                            gameBoard[boardY][boardX] = "G"+String(curPiece.name) as keyof typeof colours
+                        }                    
                     }
                 })
             })
@@ -181,7 +187,11 @@ export default function Game() {
     }
 
     const handleDas = (direction: number) =>{
-
+        const { curPiece, curPiecePos} = stateRef.current;
+        const newX = curPiecePos.x + direction
+        if(canPlace(curPiece, newX, curPiecePos.y)){
+            setCurPiecePos(prev=>({...prev, x:newX}))
+        }
     }
 
     const handleRotateClockwise = () =>{
@@ -212,7 +222,7 @@ export default function Game() {
     const gameBoard = getBoard()
     
     useEffect(()=>{
-        if (!playingState) return;
+        //if (!playingState) return;
         const handleKeyDown = (e: KeyboardEvent) =>{
             if (e.key === 'ArrowLeft') handleDas(-1);
             if (e.key === 'ArrowRight') handleDas(1);
@@ -233,24 +243,36 @@ export default function Game() {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         }
-    },[])
+    },[curPiece])
 
     //gravity
     useEffect(()=>{
         if(!playingState) return;
         const gameLoop = setInterval(()=>{
-            const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
+            const { curPiece, curPiecePos} = stateRef.current;
             const newY = curPiecePos.y + 1
             if(canPlace(curPiece, curPiecePos.x, newY)){
                 setCurPiecePos({x:curPiecePos.x, y:newY})
             }
             else{
-                handleLockPiece();
-                popQueue();
+                setIsGrounded(true);
+                //handleLockPiece();
             }
         },500);
         return () => clearInterval(gameLoop)
     },[playingState])
+
+    //handlelock
+    useEffect(()=>{
+        if(!isGrounded) return;
+        const gameLoop = setInterval(()=>{
+            //const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
+            if(isGrounded){
+                handleLockPiece();
+            }
+        },500)
+        return () => clearInterval(gameLoop)
+    },[isGrounded])
 
     return (
         <>
@@ -260,7 +282,7 @@ export default function Game() {
                 </div>
                 <div className="testFunc gap-2 flex flex-row mt-2">
                     <button onClick={()=>popQueue()} className="p-1 border rounded-full text-sm">Pop Queue</button>
-                    <button onClick={()=>handleStartGame()} className="p-1 border rounded-full text-sm">Start</button>
+                    <button onClick={handleStartGame} className="p-1 border rounded-full text-sm">Start</button>
                 </div>
                 <div className=" flex flex-row">
                     
