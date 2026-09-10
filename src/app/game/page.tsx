@@ -13,6 +13,7 @@ type PieceType = {
 type BoardCell = 0 | keyof typeof colours;
 
 const defaultSpawn = {x:3, y:18}
+const overPos = {x:3, y:19}
 const createBoard = () : BoardCell[][] => board.Default.map(row => row.map(()=>0 as BoardCell))
 
 export default function Game() {
@@ -60,40 +61,42 @@ export default function Game() {
         setIsGrounded(false);
         newBoard();
         shufflePieces();
+        popQueue();
     }
 
     const shufflePieces = () =>{
-        const {queue} = stateRef.current;
-        const shuffledPieces = [...piecesList];
+       let shuffled = [...piecesList];
 
-        if(queue === null || queue.length === 0){
-            for(let i=0; i<piecesList.length; i++){
-                const piece = Math.floor(Math.random() * (i+1));
-                [shuffledPieces[i], shuffledPieces[piece]] = [shuffledPieces[piece], shuffledPieces[i]];
-            }
-            setQueue(shuffledPieces);
+        for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        if(queue===null) return;
-        if(queue.length < 8){
-            const first7 = queue;
-            for(let i=0; i<piecesList.length; i++){
-                const piece = Math.floor(Math.random() * (i+1));
-                [shuffledPieces[i], shuffledPieces[piece]] = [shuffledPieces[piece], shuffledPieces[i]];
-            }
-            setQueue([...first7, ...shuffledPieces]);
-        }
+        setQueue(shuffled);
+        return shuffled;
     }
 
     const popQueue = () =>{
         const {queue} = stateRef.current;
-        if (queue === null){
-            shufflePieces();
+        if (!queue|| queue.length===0){
             return;
         }
-        setCurPiecePos(defaultSpawn)
-        setCurPiece(queue[0]);
-        setQueue(queue.slice(1))
-        shufflePieces();
+
+        const nextPiece = queue[0];
+        let nextQueue = queue.slice(1);
+
+        if (nextQueue.length < 7){
+            const newItems = shufflePieces();
+            nextQueue = [...nextQueue, ...newItems];
+        }
+        
+        if(!canPlace(nextPiece, overPos.x, overPos.y)){
+            //handleStop();
+            return;
+        }
+        setCurPiece(nextPiece);
+        setCurPiecePos(defaultSpawn);
+        setQueue(nextQueue);
+        setIsGrounded(false);
     }
  
     const newBoard = () =>{
@@ -183,7 +186,9 @@ export default function Game() {
     }
 
     const handleSoftDrop = () =>{
-
+        const gameLoop = setInterval(()=>{
+            
+        })
     }
 
     const handleDas = (direction: number) =>{
@@ -302,7 +307,7 @@ export default function Game() {
                             ))}
                         </div>
                         <div className="bottomBoard border border-white w-max">
-                            {gameBoard.slice(21,40).map((row, rowIndex) =>(
+                            {gameBoard.slice(20,40).map((row, rowIndex) =>(
                                 <div key={rowIndex} className="flex">
                                     {row.map((cell, cellIndex)=>(
                                         <div key={cellIndex} className="border border-slate-500 h-4 w-4" 
