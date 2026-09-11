@@ -35,6 +35,9 @@ export default function Game() {
     const [curPiecePos, setCurPiecePos] = useState(()=>(defaultSpawn))
     const [playingState, setPlayingState] = useState(false)
     const [isGrounded, setIsGrounded] = useState(false)
+
+    const softIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const dasIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     
 
     const stateRef = useRef({
@@ -186,9 +189,28 @@ export default function Game() {
     }
 
     const handleSoftDrop = () =>{
-        const gameLoop = setInterval(()=>{
-            
-        })
+        if (!softIntervalRef.current){
+            softIntervalRef.current = setInterval(()=>{
+                const { curPiece, curPiecePos} = stateRef.current;
+                const newY = curPiecePos.y+1
+                if(canPlace(curPiece, curPiecePos.x, newY)){
+                    setCurPiecePos(prev=>({...prev, y: newY }))
+                }
+                else{
+                    clearInterval(softIntervalRef.current!);
+                    softIntervalRef.current = null;
+                    return;
+                }
+            },40)
+        }
+    }
+
+    const stopSoftDrop = () =>{
+    if(softIntervalRef.current){
+    clearInterval(softIntervalRef.current!);
+    softIntervalRef.current = null;
+    return;
+    }
     }
 
     const handleDas = (direction: number) =>{
@@ -200,7 +222,7 @@ export default function Game() {
     }
 
     const handleRotateClockwise = () =>{
-
+        
     }
 
     const handleRotateCounterClockwise = () =>{
@@ -215,9 +237,7 @@ export default function Game() {
 
     }
 
-    const stopSoftDrop = () =>{
 
-    }
 
     const stopDas = () =>{
 
