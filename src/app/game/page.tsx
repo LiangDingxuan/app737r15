@@ -52,9 +52,10 @@ export default function Game() {
         setPlayingState(isPlaying)
     }
 
-    const handleStartGame=()=>{
+    const handleStartGame=(e: React.MouseEvent<HTMLButtonElement>)=>{
         setPlayingState(true);
         newGame();
+        e.currentTarget.blur();
     }
 
     //const { holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded} = stateRef.current;
@@ -153,6 +154,33 @@ export default function Game() {
         popQueue();
     }
 
+    const handleLockPiecewPos=(x:number, y:number)=>{
+        const {curPiece, boardState, curPiecePos, isGrounded} = stateRef.current;
+        const resultLockedBoard = boardState.map(row => [...row])
+        //if(!isGrounded) return;
+        if (!curPiece) return;
+        curPiece.shape.forEach((row,dy)=>{
+            row.forEach((cell,dx)=>{
+                if (cell === 0 ) return;
+
+                const boardY = y + dy;
+                const boardX = x + dx;
+
+                if(
+                    boardY >= 0 && 
+                    boardY < resultLockedBoard.length &&
+                    boardX >= 0 && 
+                    boardX < resultLockedBoard[0].length 
+                ){
+                    resultLockedBoard[boardY][boardX] = curPiece.name as keyof typeof colours
+                }
+            })
+        })
+        setBoardState(resultLockedBoard);
+        setIsGrounded(false);
+        popQueue();
+    }
+
     const getBoard = () =>{
         const gameBoard = boardState.map(row => [...row])
         if(curPiece && curPiecePos){
@@ -222,22 +250,65 @@ export default function Game() {
     }
 
     const handleRotateClockwise = () =>{
+        if(!curPiece) return;
+        let result: PieceType = {
+            name: curPiece.name,
+            shape: [],
+            colour: curPiece.colour,
+        };
         
+        for(let y = 0; y < curPiece.shape.length; y++){
+            result.shape[y] = []
+            for(let x = 0; x < curPiece.shape[y].length ; x++){
+                result.shape[y][x] = 0;
+            }
+        }
+        for(let y = 0; y < curPiece.shape.length; y++){
+            for(let x = 0; x < curPiece.shape[y].length ; x++){
+                result.shape[x][curPiece.shape.length - y - 1] = curPiece.shape[y][x]
+                //console.log(`${y},${x} = ${x},${curPiece.shape.length-y-1}`);
+            }
+        }
+        setCurPiece(result);
     }
 
     const handleRotateCounterClockwise = () =>{
+        if(!curPiece) return;
+        let result: PieceType = {
+            name: curPiece.name,
+            shape: [],
+            colour: curPiece.colour,
+        };
+        
+        for(let y = 0; y < curPiece.shape.length; y++){
+            result.shape[y] = []
+            for(let x = 0; x < curPiece.shape[y].length ; x++){
+                result.shape[y][x] = 0;
+            }
+        }
 
+        for(let y = 0; y < curPiece.shape.length; y++){
+            for(let x = 0; x < curPiece.shape[y].length ; x++){
+                result.shape[curPiece.shape.length-x-1][y] = curPiece.shape[y][x];
+            }
+        }
+
+        setCurPiece(result);
     }
 
     const handleHardDrop = () =>{
-
+        const {curPiece, curPiecePos} = stateRef.current;
+        let newY = curPiecePos.y
+        if (!curPiece) return;
+        while(canPlace(curPiece, curPiecePos.x, newY)){
+            newY+=1
+        }
+        handleLockPiecewPos(curPiecePos.x, newY-1)
     }
 
     const handleHoldPiece = () =>{
 
     }
-
-
 
     const stopDas = () =>{
 
@@ -246,6 +317,11 @@ export default function Game() {
     //setBoardState(getBoard())
     const gameBoard = getBoard()
     
+    useEffect(()=>{
+        if (!queue || queue.length===0){
+            shufflePieces();
+        }
+    })
     useEffect(()=>{
         //if (!playingState) return;
         const handleKeyDown = (e: KeyboardEvent) =>{
