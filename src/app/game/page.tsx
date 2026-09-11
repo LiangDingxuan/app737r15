@@ -29,12 +29,14 @@ export default function Game() {
     ]
 
     const [queue, setQueue] = useState<typeof piecesList|null>(null)
-    const [holdPiece, setHoldPiece] = useState(null);
+    const [holdPiece, setHoldPiece] = useState<typeof piecesList[0]|null>(null);
     const [curPiece, setCurPiece] = useState<typeof piecesList[0]|null>(null);
     const [boardState, setBoardState] = useState<BoardCell[][]>(createBoard());
     const [curPiecePos, setCurPiecePos] = useState(()=>(defaultSpawn))
     const [playingState, setPlayingState] = useState(false)
     const [isGrounded, setIsGrounded] = useState(false)
+    const [lockCount, setLockCount] = useState(0)
+    const [holdingState, setHoldingState] = useState(false);
 
     const softIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const dasIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -100,6 +102,7 @@ export default function Game() {
         setCurPiece(nextPiece);
         setCurPiecePos(defaultSpawn);
         setQueue(nextQueue);
+        setHoldingState(false)
         setIsGrounded(false);
     }
  
@@ -149,7 +152,15 @@ export default function Game() {
                 }
             })
         })
-        setBoardState(resultLockedBoard);
+
+        const clearedBoard = resultLockedBoard.filter(
+            row=>!row.every(cell => cell !== 0)
+        )
+
+        while(clearedBoard.length < board.Default.length){
+            clearedBoard.unshift(Array(10).fill(0))
+        }
+        setBoardState(clearedBoard);
         setIsGrounded(false);
         popQueue();
     }
@@ -176,7 +187,16 @@ export default function Game() {
                 }
             })
         })
-        setBoardState(resultLockedBoard);
+        
+        const clearedBoard = resultLockedBoard.filter(
+            row=>!row.every(cell => cell !== 0)
+        )
+
+        while(clearedBoard.length < board.Default.length){
+            clearedBoard.unshift(Array(10).fill(0))
+        }
+
+        setBoardState(clearedBoard);
         setIsGrounded(false);
         popQueue();
     }
@@ -234,18 +254,35 @@ export default function Game() {
     }
 
     const stopSoftDrop = () =>{
-    if(softIntervalRef.current){
-    clearInterval(softIntervalRef.current!);
-    softIntervalRef.current = null;
-    return;
-    }
+        if(softIntervalRef.current){
+            clearInterval(softIntervalRef.current!);
+            softIntervalRef.current = null;
+            return;
+        }
     }
 
     const handleDas = (direction: number) =>{
-        const { curPiece, curPiecePos} = stateRef.current;
-        const newX = curPiecePos.x + direction
-        if(canPlace(curPiece, newX, curPiecePos.y)){
-            setCurPiecePos(prev=>({...prev, x:newX}))
+        if(!dasIntervalRef.current){
+            dasIntervalRef.current = setInterval(()=>{
+                const { curPiece, curPiecePos} = stateRef.current;
+                const newX = curPiecePos.x + direction
+                if(canPlace(curPiece, newX, curPiecePos.y)){
+                    setCurPiecePos(prev=>({...prev, x:newX}))
+                }
+                else{
+                    clearInterval(softIntervalRef.current!);
+                    softIntervalRef.current = null;
+                    return;
+                }
+            }, 60)
+        }
+    }
+
+    const stopDas = () =>{
+        if(dasIntervalRef.current){
+            clearInterval(dasIntervalRef.current!);
+            dasIntervalRef.current = null;
+            return;
         }
     }
 
@@ -269,7 +306,9 @@ export default function Game() {
                 //console.log(`${y},${x} = ${x},${curPiece.shape.length-y-1}`);
             }
         }
-        setCurPiece(result);
+        if(canPlace(result, curPiecePos.x, curPiecePos.y)){
+            setCurPiece(result);
+        }
     }
 
     const handleRotateCounterClockwise = () =>{
@@ -293,7 +332,10 @@ export default function Game() {
             }
         }
 
-        setCurPiece(result);
+        if(canPlace(result, curPiecePos.x, curPiecePos.y)){
+            setCurPiece(result);
+        }
+        //setCurPiece(result);
     }
 
     const handleHardDrop = () =>{
@@ -307,21 +349,32 @@ export default function Game() {
     }
 
     const handleHoldPiece = () =>{
-
+        if(holdingState) return;
+        if(!holdPiece){
+            setHoldPiece(curPiece);
+            popQueue();
+        }
+        else{
+            const prevPiece = curPiece
+            setCurPiece(holdPiece);
+            setHoldPiece(prevPiece);
+        }
+        setCurPiecePos(defaultSpawn);
+        setHoldingState(true);
     }
 
-    const stopDas = () =>{
 
-    }
 
     //setBoardState(getBoard())
     const gameBoard = getBoard()
+
     
     useEffect(()=>{
         if (!queue || queue.length===0){
             shufflePieces();
         }
     })
+
     useEffect(()=>{
         //if (!playingState) return;
         const handleKeyDown = (e: KeyboardEvent) =>{
@@ -365,15 +418,23 @@ export default function Game() {
 
     //handlelock
     useEffect(()=>{
-        if(!isGrounded) return;
+        if(!isGrounded) {
+            return;
+        }
+        if(lockCount >= 15){
+            handleLockPiece();
+        }
+        
+        setLockCount(lockCount+1)
+
         const gameLoop = setInterval(()=>{
-            //const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
+        //const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
             if(isGrounded){
                 handleLockPiece();
             }
         },500)
         return () => clearInterval(gameLoop)
-    },[isGrounded])
+    },[isGrounded, curPiece, curPiecePos])
 
     return (
         <>
@@ -386,7 +447,26 @@ export default function Game() {
                     <button onClick={handleStartGame} className="p-1 border rounded-full text-sm">Start</button>
                 </div>
                 <div className=" flex flex-row">
-                    
+                    <div className="holdPiece mt-16 p-4 border w-max h-max">
+                        {holdPiece && (holdPiece.shape.map((row, rowIndex)=>(
+                            <div key={rowIndex} className="flex">
+                            {row.map((cell, cellIndex) =>(
+                                <div key={cellIndex} style={{
+                                    backgroundColor: 
+                                    cell === 1 ?
+                                    holdPiece.colour : 'transparent',
+                                    // border: 
+                                    // cell === 1 ?
+                                    // '1px solid' : ''
+                                }}
+                                className="h-4 w-4">
+                                    {/* {cell} */}
+                                </div>
+                            ))}
+                            </div>
+                        )))
+                        }
+                    </div>
                     <div className="board">
                         <div className="topBoard ">
                             {gameBoard.slice(16,20).map((row, rowIndex) =>(
