@@ -37,7 +37,9 @@ export default function Game() {
     const [isGrounded, setIsGrounded] = useState(false)
     const [lockCount, setLockCount] = useState(0)
     const [holdingState, setHoldingState] = useState(false);
+    const [pieceRotationState, setPieceRotationState] = useState("0")
 
+    const pieceRotationStates = ["0", "R", "2", "L"]
     const softIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const dasIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
     
@@ -50,9 +52,6 @@ export default function Game() {
         holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded
     }
 
-    const handleSetGameState = (isPlaying: boolean) =>{
-        setPlayingState(isPlaying)
-    }
 
     const handleStartGame=(e: React.MouseEvent<HTMLButtonElement>)=>{
         setPlayingState(true);
@@ -63,10 +62,13 @@ export default function Game() {
     //const { holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded} = stateRef.current;
 
     const newGame = () =>{
-        setQueue(null)
+        setBoardState(createBoard());
+        const firstQueue = shufflePieces();
+
+        setQueue(firstQueue)
         setIsGrounded(false);
-        newBoard();
-        shufflePieces();
+        
+        
         popQueue();
     }
 
@@ -77,7 +79,7 @@ export default function Game() {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        setQueue(shuffled);
+        //setQueue(shuffled);
         return shuffled;
     }
 
@@ -102,6 +104,7 @@ export default function Game() {
         setCurPiece(nextPiece);
         setCurPiecePos(defaultSpawn);
         setQueue(nextQueue);
+        setLockCount(0);
         setHoldingState(false)
         setIsGrounded(false);
     }
@@ -262,6 +265,11 @@ export default function Game() {
     }
 
     const handleDas = (direction: number) =>{
+        const { curPiece, curPiecePos} = stateRef.current;
+        const newX = curPiecePos.x + direction
+        if(canPlace(curPiece, newX, curPiecePos.y)){
+            setCurPiecePos(prev=>({...prev, x:newX}))
+        }
         if(!dasIntervalRef.current){
             dasIntervalRef.current = setInterval(()=>{
                 const { curPiece, curPiecePos} = stateRef.current;
@@ -288,18 +296,28 @@ export default function Game() {
 
     const handleRotateClockwise = () =>{
         if(!curPiece) return;
+        const prevRotationState = pieceRotationState
+        const prevStateIndex = pieceRotationStates.findIndex(state => state === prevRotationState)
+        const length = pieceRotationStates.length
+        const curRotationState = pieceRotationStates[(prevStateIndex-1+length)%length]
+        const tableKey = prevRotationState+">"+curRotationState
+        const table = kicks[tableKey as keyof typeof kicks]
+
         let result: PieceType = {
             name: curPiece.name,
             shape: [],
             colour: curPiece.colour,
         };
         
+        //initiate new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             result.shape[y] = []
             for(let x = 0; x < curPiece.shape[y].length ; x++){
                 result.shape[y][x] = 0;
             }
         }
+
+        //set new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             for(let x = 0; x < curPiece.shape[y].length ; x++){
                 result.shape[x][curPiece.shape.length - y - 1] = curPiece.shape[y][x]
@@ -308,17 +326,27 @@ export default function Game() {
         }
         if(canPlace(result, curPiecePos.x, curPiecePos.y)){
             setCurPiece(result);
+            setPieceRotationState(curRotationState);
         }
+        
     }
 
     const handleRotateCounterClockwise = () =>{
         if(!curPiece) return;
+        const prevRotationState = pieceRotationState
+        const prevStateIndex = pieceRotationStates.findIndex(state => state === prevRotationState)
+        const length = pieceRotationStates.length
+        const curRotationState = pieceRotationStates[(prevStateIndex+1)%length]
+        const tableKey = prevRotationState+">"+curRotationState
+        const table = kicks[tableKey as keyof typeof kicks]
+
         let result: PieceType = {
             name: curPiece.name,
             shape: [],
             colour: curPiece.colour,
         };
         
+        //initiate new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             result.shape[y] = []
             for(let x = 0; x < curPiece.shape[y].length ; x++){
@@ -326,6 +354,7 @@ export default function Game() {
             }
         }
 
+        //set new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             for(let x = 0; x < curPiece.shape[y].length ; x++){
                 result.shape[curPiece.shape.length-x-1][y] = curPiece.shape[y][x];
@@ -334,6 +363,7 @@ export default function Game() {
 
         if(canPlace(result, curPiecePos.x, curPiecePos.y)){
             setCurPiece(result);
+            setPieceRotationState(curRotationState);
         }
         //setCurPiece(result);
     }
@@ -360,6 +390,7 @@ export default function Game() {
             setHoldPiece(prevPiece);
         }
         setCurPiecePos(defaultSpawn);
+        setLockCount(0);
         setHoldingState(true);
     }
 
@@ -410,6 +441,7 @@ export default function Game() {
             }
             else{
                 setIsGrounded(true);
+                setLockCount(lockCount+1);
                 //handleLockPiece();
             }
         },500);
@@ -423,12 +455,10 @@ export default function Game() {
         }
         if(lockCount >= 15){
             handleLockPiece();
+            return;
         }
-        
-        setLockCount(lockCount+1)
-
         const gameLoop = setInterval(()=>{
-        //const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
+            //const {holdPiece, curPiece, boardState, curPiecePos} = stateRef.current;
             if(isGrounded){
                 handleLockPiece();
             }
@@ -438,13 +468,15 @@ export default function Game() {
 
     return (
         <>
-            <div className="m-8">
-                <div className="">
-                    <a href="/">Home</a>
-                </div>
-                <div className="testFunc gap-2 flex flex-row mt-2">
-                    <button onClick={()=>popQueue()} className="p-1 border rounded-full text-sm">Pop Queue</button>
-                    <button onClick={handleStartGame} className="p-1 border rounded-full text-sm">Start</button>
+            <div className="m-8 flex flex-row overflow-hidden height-100%">
+                <div className="mr-8">
+                    <div className="text-center">
+                        <a href="/">Home</a>
+                    </div>
+                    <div className="testFunc gap-2 flex flex-col mt-2">
+                        <button onClick={()=>popQueue()} className="p-1 border rounded-full text-sm">Pop Queue</button>
+                        <button onClick={handleStartGame} className="p-1 border rounded-full text-sm">Start</button>
+                    </div>
                 </div>
                 <div className=" flex flex-row">
                     <div className="holdPiece mt-16 p-4 border w-max h-max">
@@ -458,6 +490,8 @@ export default function Game() {
                                     // border: 
                                     // cell === 1 ?
                                     // '1px solid' : ''
+                                    //height: cell === 0 ? 0 : 16,
+                                    //width: cell === 0 ? 0 : 16
                                 }}
                                 className="h-4 w-4">
                                     {/* {cell} */}
@@ -517,7 +551,14 @@ export default function Game() {
                         ))}
                     </div>
                 </div>
+                <script
+                    async
+                    src="https://kilobot.app/widget/v1.js"
+                    data-kilobot-widget="pub_6651047dc35c4ea79d32774666c58a13"
+                    data-kilobot-mode="ai-powered"
+                ></script>
             </div>
+            
         </>
     )
 }

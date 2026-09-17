@@ -63,6 +63,12 @@ export default function Home() {
           </a>
         </div>
       </main>
+      <script
+        async
+        src="https://kilobot.app/widget/v1.js"
+        data-kilobot-widget="pub_6651047dc35c4ea79d32774666c58a13"
+        data-kilobot-mode="ai-powered"
+      ></script>
     </div>
   );
 }
