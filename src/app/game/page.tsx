@@ -1,5 +1,5 @@
 "use client";
-import{kicks} from "./kicks";
+import{kicks, iKicks} from "./kicks";
 import{pieces} from "./pieces";
 import{board} from "./board";
 import{colours} from "./pieces";
@@ -278,8 +278,8 @@ export default function Game() {
                     setCurPiecePos(prev=>({...prev, x:newX}))
                 }
                 else{
-                    clearInterval(softIntervalRef.current!);
-                    softIntervalRef.current = null;
+                    clearInterval(dasIntervalRef.current!);
+                    dasIntervalRef.current = null;
                     return;
                 }
             }, 60)
@@ -302,13 +302,15 @@ export default function Game() {
         const curRotationState = pieceRotationStates[(prevStateIndex-1+length)%length]
         const tableKey = prevRotationState+">"+curRotationState
         const table = kicks[tableKey as keyof typeof kicks]
+        const iTable = iKicks[tableKey as keyof typeof kicks]
 
+        
         let result: PieceType = {
             name: curPiece.name,
             shape: [],
             colour: curPiece.colour,
         };
-        
+        console.log(tableKey);
         //initiate new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             result.shape[y] = []
@@ -328,6 +330,29 @@ export default function Game() {
             setCurPiece(result);
             setPieceRotationState(curRotationState);
         }
+        else{
+            if(curPiece.name !== "I"){
+                table.forEach(function(kick){
+                const newPosX = curPiecePos.x+kick.x
+                const newPosY = curPiecePos.y+kick.y
+                if(canPlace(result, newPosX, newPosY)){
+                    setCurPiece(result);
+                    setPieceRotationState(curRotationState);
+                    }
+                })
+            }
+            else if(curPiece.name === "I"){
+                iTable.forEach(function(kick){
+                const newPosX = curPiecePos.x+kick.x
+                const newPosY = curPiecePos.y+kick.y
+                if(canPlace(result, newPosX, newPosY)){
+                    setCurPiece(result);
+                    setPieceRotationState(curRotationState);
+                    }
+                })
+            }
+            
+        }
         
     }
 
@@ -339,6 +364,7 @@ export default function Game() {
         const curRotationState = pieceRotationStates[(prevStateIndex+1)%length]
         const tableKey = prevRotationState+">"+curRotationState
         const table = kicks[tableKey as keyof typeof kicks]
+        const iTable = iKicks[tableKey as keyof typeof kicks]
 
         let result: PieceType = {
             name: curPiece.name,
@@ -346,6 +372,7 @@ export default function Game() {
             colour: curPiece.colour,
         };
         
+        console.log(tableKey);
         //initiate new shape
         for(let y = 0; y < curPiece.shape.length; y++){
             result.shape[y] = []
@@ -365,7 +392,28 @@ export default function Game() {
             setCurPiece(result);
             setPieceRotationState(curRotationState);
         }
-        //setCurPiece(result);
+        else{
+            if(curPiece.name !== "I"){
+                table.forEach(function(kick){
+                const newPosX = curPiecePos.x+kick.x
+                const newPosY = curPiecePos.y+kick.y
+                if(canPlace(result, newPosX, newPosY)){
+                    setCurPiece(result);
+                    setPieceRotationState(curRotationState);
+                    }
+                })
+            }
+            else if(curPiece.name === "I"){
+                iTable.forEach(function(kick){
+                const newPosX = curPiecePos.x+kick.x
+                const newPosY = curPiecePos.y+kick.y
+                if(canPlace(result, newPosX, newPosY)){
+                    setCurPiece(result);
+                    setPieceRotationState(curRotationState);
+                    }
+                })
+            }
+        }
     }
 
     const handleHardDrop = () =>{
