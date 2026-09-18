@@ -337,6 +337,7 @@ export default function Game() {
                 const newPosY = curPiecePos.y+kick.y
                 if(canPlace(result, newPosX, newPosY)){
                     setCurPiece(result);
+                    setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
                     }
                 })
@@ -347,6 +348,7 @@ export default function Game() {
                 const newPosY = curPiecePos.y+kick.y
                 if(canPlace(result, newPosX, newPosY)){
                     setCurPiece(result);
+                    setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
                     }
                 })
@@ -399,6 +401,7 @@ export default function Game() {
                 const newPosY = curPiecePos.y+kick.y
                 if(canPlace(result, newPosX, newPosY)){
                     setCurPiece(result);
+                    setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
                     }
                 })
@@ -409,6 +412,7 @@ export default function Game() {
                 const newPosY = curPiecePos.y+kick.y
                 if(canPlace(result, newPosX, newPosY)){
                     setCurPiece(result);
+                    setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
                     }
                 })
@@ -418,12 +422,12 @@ export default function Game() {
 
     const handleHardDrop = () =>{
         const {curPiece, curPiecePos} = stateRef.current;
-        let newY = curPiecePos.y
+        let newY = curPiecePos.y;
         if (!curPiece) return;
         while(canPlace(curPiece, curPiecePos.x, newY)){
-            newY+=1
+            newY+=1;
         }
-        handleLockPiecewPos(curPiecePos.x, newY-1)
+        handleLockPiecewPos(curPiecePos.x, newY-1);
     }
 
     const handleHoldPiece = () =>{
