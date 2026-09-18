@@ -306,7 +306,7 @@ export default function Game() {
         const prevRotationState = pieceRotationState
         const prevStateIndex = pieceRotationStates.findIndex(state => state === prevRotationState)
         const length = pieceRotationStates.length
-        const curRotationState = pieceRotationStates[(prevStateIndex-1+length)%length]
+        const curRotationState = pieceRotationStates[(prevStateIndex-1)%length]
         const tableKey = prevRotationState+">"+curRotationState
         const table = kicks[tableKey as keyof typeof kicks]
         const iTable = iKicks[tableKey as keyof typeof kicks]
@@ -336,6 +336,7 @@ export default function Game() {
         if(canPlace(result, curPiecePos.x, curPiecePos.y)){
             setCurPiece(result);
             setPieceRotationState(curRotationState);
+            return;
         }
         else{
             if(curPiece.name !== "I"){
@@ -346,6 +347,7 @@ export default function Game() {
                     setCurPiece(result);
                     setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
+                    return;
                     }
                 })
             }
@@ -357,6 +359,7 @@ export default function Game() {
                     setCurPiece(result);
                     setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
+                    return;
                     }
                 })
             }
@@ -406,6 +409,7 @@ export default function Game() {
         if(canPlace(result, curPiecePos.x, curPiecePos.y)){
             setCurPiece(result);
             setPieceRotationState(curRotationState);
+            return;
         }
         else{
             if(curPiece.name !== "I"){
@@ -416,6 +420,7 @@ export default function Game() {
                     setCurPiece(result);
                     setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
+                    return;
                     }
                 })
             }
@@ -427,6 +432,7 @@ export default function Game() {
                     setCurPiece(result);
                     setCurPiecePos({ x: newPosX, y: newPosY });
                     setPieceRotationState(curRotationState);
+                    return;
                     }
                 })
             }
