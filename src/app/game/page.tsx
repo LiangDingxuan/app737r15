@@ -45,11 +45,11 @@ export default function Game() {
     
 
     const stateRef = useRef({
-        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded, pieceRotationState
     })
 
     stateRef.current = {
-        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded
+        holdPiece, curPiece, boardState, curPiecePos, playingState, queue, isGrounded, pieceRotationState
     }
 
 
@@ -295,6 +295,13 @@ export default function Game() {
     }
 
     const handleRotateClockwise = () =>{
+
+        const {
+            curPiece,
+            curPiecePos,
+            pieceRotationState,
+        } = stateRef.current;
+
         if(!curPiece) return;
         const prevRotationState = pieceRotationState
         const prevStateIndex = pieceRotationStates.findIndex(state => state === prevRotationState)
@@ -359,6 +366,12 @@ export default function Game() {
     }
 
     const handleRotateCounterClockwise = () =>{
+
+        const {
+            curPiece,
+            curPiecePos,
+            pieceRotationState,
+        } = stateRef.current;
         if(!curPiece) return;
         const prevRotationState = pieceRotationState
         const prevStateIndex = pieceRotationStates.findIndex(state => state === prevRotationState)
